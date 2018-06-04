@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <cstring>
 #include <cstdlib>
 
@@ -9,7 +8,7 @@
 extern "C" {
 #endif
 
-#include "sha256_calc.cuh"
+#include "calc_nonce_cuda.cuh"
 
 #ifdef __cplusplus
 }

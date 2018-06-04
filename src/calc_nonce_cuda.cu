@@ -8,6 +8,8 @@
 
 #include <curand_kernel.h>
 
+//debug main() off
+#define DEBUG
 
 /***string***/
 
@@ -117,8 +119,8 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 	BYTE blocknonce[157+8+1];
 	char hash[65];
 
-	extern __shared__ char sub_zero_size[];
-	__shared__ char sub_block[157+1];
+	//extern __shared__ char sub_zero_size[];
+	//__shared__ char sub_block[157+1];
 
 	char sub_nonce[9];
 	my_strcpy(sub_nonce,nonce);
@@ -127,8 +129,8 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 	int id = blockIdx.x * blockDim.x + threadIdx.x;
 	curand_init(0, id, id, &s);	
 
-/*
 	do{
+		
 	random_nonce(sub_nonce,s);
 
 	my_strcpy((char *)blocknonce,block);
@@ -136,19 +138,15 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 
 	calc_SHA256((char *)blocknonce,hash,my_strlen(zero_size));
 
-	printf("A::nonce:%s,hash:%s\n",sub_nonce,hash);
+	*found = (my_strcmp(hash,zero_size) == 0);
 
-	*found = my_strcmp(hash,zero_size) == 0;
 	} while(!(*found));
 
-*/
 
 	my_strcpy(nonce,sub_nonce);
 
 	//for debug
-	printf("blocknonce:%s\n",blocknonce);
-
-	printf("id=%d,afound:%d\n",id,*found);
+	//printf("id=%d,blocknonce:%s\n",id,blocknonce);
 
 }
 
@@ -169,8 +167,8 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 	cudaMemcpy(d_zero_size, zero_size, sizeof(char) * strlen(zero_size), cudaMemcpyHostToDevice);
 	cudaMemcpy(d_block, block, sizeof(char) * strlen(block), cudaMemcpyHostToDevice);
 
-
-	calc_nonce_kernel<<<3,1,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
+	//calc_nonce_kernel<<<1024,256,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
+	calc_nonce_kernel<<<1,1>>>(d_found, d_zero_size, d_block, d_nonce);
 
 	cudaMemcpy(nonce, d_nonce, sizeof(char) * strlen(nonce), cudaMemcpyDeviceToHost);
 
@@ -180,10 +178,12 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 	cudaFree(d_found);
 
 }
-#ifndef __DEBUG__
+
+
+#ifndef DEBUG
 int main(void){
 
-	char zero[200]="0";
+	char zero[200]="000";
 	char block[20]="aaaaa";
 	char nonce[9]="00000000";
 
@@ -192,7 +192,6 @@ int main(void){
 	printf("nonce:%s\n",nonce);
 
 	return 0;
-
 
 }
 #endif

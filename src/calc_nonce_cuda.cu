@@ -138,12 +138,15 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 
 	calc_SHA256((char *)blocknonce,hash,my_strlen(zero_size));
 
-	*found = (my_strcmp(hash,zero_size) == 0);
+	if(my_strcmp(hash,zero_size) == 0) {
+		my_strcpy(nonce,sub_nonce);
+		break;
+	}
 
 	} while(!(*found));
 
-
-	my_strcpy(nonce,sub_nonce);
+	*found = true;
+	
 
 	//for debug
 	//printf("id=%d,blocknonce:%s\n",id,blocknonce);
@@ -168,7 +171,7 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 	cudaMemcpy(d_block, block, sizeof(char) * strlen(block), cudaMemcpyHostToDevice);
 
 	//calc_nonce_kernel<<<1024,256,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
-	calc_nonce_kernel<<<1,1>>>(d_found, d_zero_size, d_block, d_nonce);
+	calc_nonce_kernel<<<1024,1>>>(d_found, d_zero_size, d_block, d_nonce);
 
 	cudaMemcpy(nonce, d_nonce, sizeof(char) * strlen(nonce), cudaMemcpyDeviceToHost);
 
@@ -183,8 +186,8 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 #ifndef DEBUG
 int main(void){
 
-	char zero[200]="000";
-	char block[20]="aaaaa";
+	char zero[200]="00000";
+	char block[20]="aaa";
 	char nonce[9]="00000000";
 
 	calc_nonce_host(zero,block,nonce);

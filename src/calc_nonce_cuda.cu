@@ -127,11 +127,13 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 	int id = blockIdx.x * blockDim.x + threadIdx.x;
 	curand_init(0, id, id, &s);	
 
+
 	do{
 		
 	random_nonce(sub_nonce,s);
 
 	my_strcpy((char *)blocknonce,block);
+
 	my_strcat((char *)blocknonce,sub_nonce);
 
 	calc_SHA256((char *)blocknonce,hash,my_strlen(zero_size));
@@ -144,7 +146,6 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 	} while(!(*found));
 
 	*found = true;
-	
 
 	//for debug
 	//printf("id=%d,blocknonce:%s\n",id,blocknonce);
@@ -161,17 +162,18 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 	cudaMalloc((void**)&d_found, sizeof(bool));
 	cudaMemset(d_found, false, sizeof(bool));
 
-	cudaMalloc((void**)&d_zero_size,sizeof(char) * strlen(zero_size));
-	cudaMalloc((void**)&d_block, sizeof(char) * strlen(block));
-	cudaMalloc((void**)&d_nonce, sizeof(char) * strlen(nonce));
+	cudaMalloc((void**)&d_zero_size,sizeof(char) * strlen(zero_size)+1);
+	cudaMalloc((void**)&d_block, sizeof(char) * strlen(block)+1);
+	cudaMalloc((void**)&d_nonce, sizeof(char) * strlen(nonce)+1);
 
-	cudaMemcpy(d_zero_size, zero_size, sizeof(char) * strlen(zero_size), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_block, block, sizeof(char) * strlen(block), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_zero_size, zero_size, sizeof(char) * strlen(zero_size)+1, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_block, block, sizeof(char) * strlen(block)+1, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_nonce, nonce, sizeof(char) * strlen(nonce)+1, cudaMemcpyHostToDevice);
 
-	//calc_nonce_kernel<<<1024,256,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
-	calc_nonce_kernel<<<1,1>>>(d_found, d_zero_size, d_block, d_nonce);
+	//calc_nonce_kernel<<<1024,1,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
+	calc_nonce_kernel<<<1024,1>>>(d_found, d_zero_size, d_block, d_nonce);
 
-	cudaMemcpy(nonce, d_nonce, sizeof(char) * strlen(nonce), cudaMemcpyDeviceToHost);
+	cudaMemcpy(nonce, d_nonce, sizeof(char) * strlen(nonce)+1, cudaMemcpyDeviceToHost);
 
 	cudaFree(d_zero_size);
 	cudaFree(d_block);

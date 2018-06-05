@@ -4,11 +4,7 @@
 
 #include "calc_nonce.hpp"
 
-
-//extern "C" {
 #include "calc_nonce_cuda.cuh"
-//}
-
 
 
 string *calc_nonce(string *zero_size, string *block){

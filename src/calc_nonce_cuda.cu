@@ -109,12 +109,10 @@ void calc_SHA256(char *string, char *string_hash, int hashlen){
 
 	string_change(buf,string_hash,hashlen);
 
-
 }
 
 __global__
 void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char *nonce){
-
 
 	BYTE blocknonce[157+8+1];
 	char hash[65];
@@ -171,7 +169,7 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 	cudaMemcpy(d_block, block, sizeof(char) * strlen(block), cudaMemcpyHostToDevice);
 
 	//calc_nonce_kernel<<<1024,256,strlen(zero_size)+1>>>(d_found, d_zero_size, d_block, d_nonce);
-	calc_nonce_kernel<<<1024,1>>>(d_found, d_zero_size, d_block, d_nonce);
+	calc_nonce_kernel<<<1,1>>>(d_found, d_zero_size, d_block, d_nonce);
 
 	cudaMemcpy(nonce, d_nonce, sizeof(char) * strlen(nonce), cudaMemcpyDeviceToHost);
 
@@ -186,7 +184,7 @@ void calc_nonce_host(const char *zero_size, const char *block, char *nonce){
 #ifndef DEBUG
 int main(void){
 
-	char zero[200]="00000";
+	char zero[200]="0";
 	char block[20]="aaa";
 	char nonce[9]="00000000";
 

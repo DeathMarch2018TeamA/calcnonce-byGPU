@@ -4,15 +4,12 @@
 
 #include "calc_nonce.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
+//extern "C" {
 #include "calc_nonce_cuda.cuh"
+//}
 
-#ifdef __cplusplus
-}
-#endif
+
 
 string *calc_nonce(string *zero_size, string *block){
 

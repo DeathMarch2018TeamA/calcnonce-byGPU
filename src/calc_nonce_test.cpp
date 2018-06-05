@@ -15,7 +15,7 @@ int main(void){
     string *p_zero_num, *p_block[10], *p_nonce[10];
     srand(1);
 
-    p_zero_num = new string(3, '0');
+    p_zero_num = new string(1, '0');
     cout << "zero_num:" << *p_zero_num << endl;
 
     // calculate nonce

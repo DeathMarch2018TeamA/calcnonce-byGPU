@@ -1,14 +1,10 @@
-#include <stdio.h>
-#include <string.h>
-
-#include <stdlib.h>	//rand()
-
 #include "sha256.cuh"
 #include "calc_nonce_cuda.cuh"
 
 #include <curand_kernel.h>
 
 //debug main() off
+#include<stdio.h>
 #define DEBUG
 
 /***string***/
@@ -25,13 +21,6 @@ __device__ char * my_strcpy(char *dest, const char *src){
 	do {
 	  dest[i] = src[i];}
 	while (src[i++] != 0);
-	return dest;
-}
-  
-  __device__ char * my_strcat(char *dest, const char *src){
-	int i = 0;
-	while (dest[i] != 0) i++;
-	my_strcpy(dest+i, src);
 	return dest;
 }
 
@@ -53,8 +42,7 @@ char change_10to16_one(int x) {
 
 	char c;
 
-	if (0 > x || x > 15) return 'X';
-	else if (x >= 0 && x <= 9) c = x + '0';
+	if (x >= 0 && x <= 9) c = x + '0';
 	else if (x >= 10 && x <= 15) c = x + 'a' - 10;
 
 	return c;
@@ -98,13 +86,13 @@ void calc_SHA256(char *string, char *string_hash, int hashlen){
 	SHA256_CTX ctx;
 
 	sha256_init(&ctx);
-	sha256_update(&ctx, (BYTE *)string, my_strlen(string));
+	sha256_update(&ctx, (const BYTE *)string, my_strlen(string));
 	sha256_final(&ctx, buf);
 
 	string_change(buf,string_hash,64);
 
 	sha256_init(&ctx);
-	sha256_update(&ctx, (const BYTE *)string_hash, my_strlen(string_hash));
+	sha256_update(&ctx, (const BYTE *)string_hash, 64);
 	sha256_final(&ctx, buf);
 
 	string_change(buf,string_hash,hashlen);
@@ -123,25 +111,27 @@ void calc_nonce_kernel(volatile bool *found, char *zero_size, char *block, char 
 	char sub_nonce[9];
 	my_strcpy(sub_nonce,nonce);
 
+	int block_len=my_strlen(block);
+	int zero_size_len=my_strlen(zero_size);
+
 	curandState s;
 	int id = blockIdx.x * blockDim.x + threadIdx.x;
-	curand_init(0, id, id, &s);	
-
-
-	do{
-		
-	random_nonce(sub_nonce,s);
+	curand_init(0, id, id, &s);
 
 	my_strcpy((char *)blocknonce,block);
 
-	my_strcat((char *)blocknonce,sub_nonce);
+	do{
+		
+		random_nonce(sub_nonce,s);
 
-	calc_SHA256((char *)blocknonce,hash,my_strlen(zero_size));
+		my_strcpy((char *)blocknonce+block_len,sub_nonce);
 
-	if(my_strcmp(hash,zero_size) == 0) {
-		my_strcpy(nonce,sub_nonce);
-		break;
-	}
+		calc_SHA256((char *)blocknonce,hash,zero_size_len);
+
+		if(my_strcmp(hash,zero_size) == 0) {
+			my_strcpy(nonce,sub_nonce);
+			break;
+		}
 
 	} while(!(*found));
 
